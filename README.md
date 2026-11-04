@@ -1,2 +1,393 @@
 # KlimatnaEvropa2.0
 Сайт за климат на европа 2.0
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Климатът на Европа</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: един дълъг лист. Горе е линеен мащаб на европейските температурни рекорди,
+   след това зоните, интерактивна климатограма по градове, причините и промяната. */
+:root {
+  --bg: #eef2f4;
+  --surface: #ffffff;
+  --fg: #12222c;
+  --muted: #4d6270;
+  --line: #cdd8de;
+  --accent: #0b6b78;
+  --accent-fg: #ffffff;
+  --rain: #3f7fc4;
+  --temp: #d2541b;
+  --cold: #5a8fd6;
+  --hot: #e0642a;
+  --z1: #4f8fc9;
+  --z2: #e0a43a;
+  --z3: #6a9a5b;
+  --z4: #3f6f78;
+  --z5: #9db4c4;
+  --z6: #c98a64;
+  --z7: #8a7fb3;
+  --font-display: "Unbounded", "Onest", system-ui, sans-serif;
+  --font-body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1820; --surface: #13242e; --fg: #e4eef3; --muted: #9bb1bd; --line: #26404d;
+    --accent: #4cc1cf; --accent-fg: #07181d; --rain: #5b9be0; --temp: #f0824a;
+    --cold: #6ea3e6; --hot: #f0824a;
+    --z1: #6aa7de; --z2: #e9b455; --z3: #82b573; --z4: #5aa0ab; --z5: #b3c7d4; --z6: #db9f7a; --z7: #a597cf;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1820; --surface: #13242e; --fg: #e4eef3; --muted: #9bb1bd; --line: #26404d;
+  --accent: #4cc1cf; --accent-fg: #07181d; --rain: #5b9be0; --temp: #f0824a;
+  --cold: #6ea3e6; --hot: #f0824a;
+  --z1: #6aa7de; --z2: #e9b455; --z3: #82b573; --z4: #5aa0ab; --z5: #b3c7d4; --z6: #db9f7a; --z7: #a597cf;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+  padding-block: 0 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.15; }
+p { margin: 0; max-width: 65ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Hero */
+.hero { padding-block: 56px 40px; display: grid; gap: 28px; }
+.hero h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 7vw, 68px); letter-spacing: -0.02em; }
+.hero .lead { font-size: clamp(18px, 2.4vw, 21px); color: var(--muted); }
+
+.ruler { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px 20px 16px; display: grid; gap: 12px; }
+.ruler-bar { position: relative; height: 18px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--cold) 0%, var(--z5) 50%, var(--hot) 100%); }
+.ruler-bar::after { content: ""; position: absolute; left: 54.6%; top: -6px; bottom: -6px; width: 2px; background: var(--fg); }
+.mark { position: absolute; top: -6px; bottom: -6px; width: 3px; background: var(--fg); }
+.ruler-scale { position: relative; height: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ruler-scale span { position: absolute; transform: translateX(-50%); }
+.ruler-scale span:first-child { transform: none; }
+.ruler-scale span:last-child { transform: translateX(-100%); }
+.ruler-notes { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; font-size: 14px; }
+.ruler-notes b { font-family: var(--font-mono); font-weight: 500; font-size: 15px; }
+.ruler-notes div { min-width: 0; }
+
+/* Sections */
+section { padding-block: 40px; border-top: 1px solid var(--line); }
+section > .wrap > h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(24px, 4vw, 34px); letter-spacing: -0.01em; margin-bottom: 14px; }
+.sec-lead { color: var(--muted); margin-bottom: 28px; }
+
+/* Zones */
+.zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 0 32px; }
+.zone { display: grid; grid-template-columns: 14px 1fr; gap: 0 14px; padding-block: 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+.swatch { width: 14px; height: 14px; border-radius: 50%; margin-top: 6px; }
+.zone h3 { font-size: 18px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.zone .code { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-weight: 400; }
+.zone .where { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.zone p.desc { font-size: 15.5px; margin-top: 6px; }
+
+/* Climograph */
+.cg { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 20px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font: inherit; font-size: 15px; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.tab:hover { border-color: var(--accent); }
+.tab[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.cg-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px; }
+.cg-head h3 { font-size: 22px; font-weight: 600; }
+.cg-head .type { font-size: 14px; color: var(--muted); }
+.chart-box { overflow-x: auto; }
+.chart-box svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.chart-box text { font-family: var(--font-mono); font-size: 11px; fill: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 14px; color: var(--muted); }
+.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.legend i.l { height: 3px; vertical-align: 3px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 14px 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+.stats dt { font-size: 13px; color: var(--muted); }
+.stats dd { margin: 2px 0 0; font-family: var(--font-mono); font-size: 18px; font-variant-numeric: tabular-nums; }
+.cg-note { font-size: 15px; color: var(--muted); }
+
+/* Factors */
+.factors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 28px 40px; }
+.factor { min-width: 0; }
+.factor h3 { font-size: 19px; font-weight: 600; margin-bottom: 6px; }
+.factor p { font-size: 16px; }
+
+/* Change */
+.change { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 28px 40px; }
+.change h3 { font-size: 19px; font-weight: 600; margin-bottom: 6px; }
+.change p { font-size: 16px; }
+.change .big { font-family: var(--font-mono); font-size: 15px; color: var(--accent); margin-bottom: 4px; display: block; }
+
+footer { padding-top: 28px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+footer p { max-width: 75ch; }
+
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  .hero { padding-block: 36px 28px; }
+  .cg { padding: 14px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tab { transition: background-color .15s, border-color .15s; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow">Климат · Европа · 35°–71° с.ш.</p>
+    <h1>Климатът на Европа</h1>
+    <p class="lead">Един континент, в който през една и съща година може да има 48,8 °C в Сицилия и −58,1 °C в северна Русия. Разликата идва от две неща: колко на север си и колко далеч си от Атлантическия океан.</p>
+    <div class="ruler" role="img" aria-label="Температурен мащаб от −60 до +50 градуса с рекордите на Европа: −58,1 градуса и 48,8 градуса">
+      <p class="eyebrow">Рекордите на континента, °C</p>
+      <div class="ruler-bar">
+        <span class="mark" style="left: 1.7%"></span>
+        <span class="mark" style="left: 98.4%; transform: translateX(-100%)"></span>
+      </div>
+      <div class="ruler-scale" aria-hidden="true">
+        <span style="left:0">−60</span>
+        <span style="left:18.2%">−40</span>
+        <span style="left:36.4%">−20</span>
+        <span style="left:54.6%">0</span>
+        <span style="left:72.7%">20</span>
+        <span style="left:90.9%">40</span>
+        <span style="left:100%">50</span>
+      </div>
+      <div class="ruler-notes">
+        <div><b>−58,1 °C</b><br>Усть-Щугор, Русия, 1978</div>
+        <div style="text-align:right"><b>48,8 °C</b><br>Сиракуза, Сицилия, 2021</div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>Седем климатични зони</h2>
+    <p class="sec-lead">По класификацията на Кьопен и Гайгер европейският континент се разделя на няколко основни типа. Границите между тях са плавни и често следват релефа, а не паралелите.</p>
+    <div class="zones">
+      <div class="zone"><span class="swatch" style="background:var(--z1)"></span><div>
+        <h3>Океански <span class="code">Cfb</span></h3>
+        <p class="where">Британски острови, Франция, Бенелюкс, северозападна Испания</p>
+        <p class="desc">Меки зими, хладни лета и дъжд през цялата година. Океанът изглажда разликите между сезоните.</p></div></div>
+      <div class="zone"><span class="swatch" style="background:var(--z2)"></span><div>
+        <h3>Средиземноморски <span class="code">Csa · Csb</span></h3>
+        <p class="where">Португалия, Испания, Италия, Гърция, адриатическото крайбрежие</p>
+        <p class="desc">Горещи и сухи лета, меки и влажни зими. Най-много дъжд вали от октомври до март.</p></div></div>
+      <div class="zone"><span class="swatch" style="background:var(--z3)"></span><div>
+        <h3>Умереноконтинентален <span class="code">Dfb · Dfa</span></h3>
+        <p class="where">Централна и Източна Европа, Балканите, Украйна, централна Русия</p>
+        <p class="desc">Студени зими със сняг, топли до горещи лета. Годишната амплитуда на температурата е голяма, а дъждът е най-силен през лятото.</p></div></div>
+      <div class="zone"><span class="swatch" style="background:var(--z4)"></span><div>
+        <h3>Субарктичен <span class="code">Dfc</span></h3>
+        <p class="where">Северна Скандинавия, Финландия, северна Русия</p>
+        <p class="desc">Дълги студени зими и кратки хладни лета. Гори от смърч и бор покриват огромни пространства.</p></div></div>
+      <div class="zone"><span class="swatch" style="background:var(--z5)"></span><div>
+        <h3>Тундров <span class="code">ET</span></h3>
+        <p class="where">Северният бряг на Скандинавия и Русия, Свалбард</p>
+        <p class="desc">Средната температура на най-топлия месец остава под 10 °C. Дървета почти няма.</p></div></div>
+      <div class="zone"><span class="swatch" style="background:var(--z6)"></span><div>
+        <h3>Полусух <span class="code">BSk</span></h3>
+        <p class="where">Централна и югоизточна Испания, части от Крим и Каспийската низина</p>
+        <p class="desc">Под около 400 мм валежи годишно. Лятото е горещо, а сушата е често явление.</p></div></div>
+      <div class="zone"><span class="swatch" style="background:var(--z7)"></span><div>
+        <h3>Планински <span class="code">H</span></h3>
+        <p class="where">Алпи, Пиренеи, Карпати, Рила, Пирин, Кавказ</p>
+        <p class="desc">Температурата пада средно с около 6,5 °C на всеки километър надморска височина, а валежите растат с височината.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Климатограми на седем града</h2>
+    <p class="sec-lead">Изберете град. Стълбовете показват месечните валежи, линията показва средната температура. Скалите са еднакви за всички градове, затова можете да ги сравнявате директно.</p>
+    <div class="cg">
+      <div class="tabs" id="tabs" role="group" aria-label="Избор на град"></div>
+      <div class="cg-head">
+        <h3 id="cg-title"></h3>
+        <span class="type" id="cg-type"></span>
+      </div>
+      <div class="chart-box"><div id="chart"></div></div>
+      <div class="legend" aria-hidden="true">
+        <span><i style="background:var(--rain)"></i>Валежи, мм (дясна скала)</span>
+        <span><i class="l" style="background:var(--temp)"></i>Средна температура, °C (лява скала)</span>
+      </div>
+      <dl class="stats" id="stats"></dl>
+      <p class="cg-note" id="cg-note"></p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Какво формира климата</h2>
+    <p class="sec-lead">Четири основни фактора обясняват повечето от разликите между градовете по-горе.</p>
+    <div class="factors">
+      <div class="factor"><h3>Атлантическото течение</h3>
+        <p>Топли водни маси от Мексиканския залив стигат до бреговете на Северозападна Европа. Затова Берген на 60° с.ш. е по-топъл през януари от много градове значително по-на юг в Канада.</p></div>
+      <div class="factor"><h3>Западните ветрове</h3>
+        <p>В умерените ширини въздухът се движи предимно от запад на изток. Той носи влага и умерени температури от океана навътре в континента и отслабва, докато стигне до Източна Европа.</p></div>
+      <div class="factor"><h3>Континенталността</h3>
+        <p>Сушата се нагрява и изстива по-бързо от водата. Колкото по-далеч от океана, толкова по-горещо е лятото и по-студена е зимата. Лондон има годишна амплитуда около 13 °C, Москва над 26 °C.</p></div>
+      <div class="factor"><h3>Планините</h3>
+        <p>Алпите, Пиренеите и Карпатите задържат влажните въздушни маси и създават дъждовна сянка зад себе си. Затова западните склонове са влажни, а вътрешността на Испания е суха.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Климатът се променя</h2>
+    <p class="sec-lead">Европа е континентът, който се затопля най-бързо.</p>
+    <div class="change">
+      <div><span class="big">≈ 2× световното</span><h3>Темпът на затопляне</h3>
+        <p>От 80-те години на миналия век средната температура в Европа расте приблизително два пъти по-бързо от глобалната средна стойност, по оценки на Световната метеорологична организация.</p></div>
+      <div><span class="big">Юг: суша</span><h3>Какво се променя на юг</h3>
+        <p>Средиземноморието става по-сухо. Периодите с горещини над 40 °C и пожарите са по-чести, а водните запаси в Иберия и Италия са под натиск.</p></div>
+      <div><span class="big">Север: дъжд</span><h3>Какво се променя на север</h3>
+        <p>Скандинавия и Северна Европа получават повече валежи, снежната покривка е по-кратка, а ледниците в Алпите и в Норвегия отстъпват.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>България между три влияния</h2>
+    <div class="factors">
+      <div class="factor"><p>Страната лежи на границата на умереноконтиненталния и средиземноморския климат. Северна България и Дунавската равнина са отворени към студени въздушни маси от североизток, затова зимите там са по-сурови.</p></div>
+      <div class="factor"><p>Южните части, долината на Струма и Черноморието получават смекчаващо влияние от Егейско и Черно море. Най-високите върхове в Рила и Пирин са с планински климат, а снежната покривка там се задържа по пет и повече месеца.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer>
+    <p>Месечните стойности на климатограмите са закръглени приблизителни средни за периода 1991–2020 и са подходящи за сравнение между градовете, не за точни справки. Класификацията на климата е по Кьопен и Гайгер. Рекордите са по данни на Световната метеорологична организация.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var MONTHS = ["яну", "фев", "мар", "апр", "май", "юни", "юли", "авг", "сеп", "окт", "ное", "дек"];
+  var FULL = ["януари", "февруари", "март", "април", "май", "юни", "юли", "август", "септември", "октомври", "ноември", "декември"];
+  var CITIES = [
+    { id: "sofia", name: "София", country: "България", type: "Умереноконтинентален (Dfb), планинско влияние", alt: "550 м",
+      t: [-0.8, 1.1, 5.3, 10.6, 15.3, 19.1, 21.4, 21.0, 16.7, 11.4, 5.7, 0.9],
+      p: [37, 38, 42, 56, 80, 78, 55, 48, 48, 42, 52, 47],
+      note: "Столицата е в котловина на 550 м. Зимата е студена, лятото е топло, а най-много вали през май и юни." },
+    { id: "london", name: "Лондон", country: "Великобритания", type: "Океански (Cfb)", alt: "25 м",
+      t: [5.2, 5.4, 7.6, 10.1, 13.4, 16.6, 18.8, 18.6, 15.7, 12.0, 8.3, 5.8],
+      p: [55, 41, 41, 48, 49, 49, 45, 50, 50, 68, 59, 55],
+      note: "Валежите са равномерни през цялата година, а температурата не пада под нулата по-често от няколко дни в зимата." },
+    { id: "rome", name: "Рим", country: "Италия", type: "Средиземноморски (Csa)", alt: "20 м",
+      t: [8.0, 8.6, 11.0, 13.7, 18.0, 22.2, 25.0, 25.0, 21.0, 17.0, 12.0, 8.8],
+      p: [67, 70, 60, 64, 45, 29, 17, 26, 66, 100, 119, 87],
+      note: "Юли и август са почти сухи, а есента е най-влажният сезон. Типичната средиземноморска схема." },
+    { id: "madrid", name: "Мадрид", country: "Испания", type: "Полусух (BSk) / преходен", alt: "650 м",
+      t: [6.0, 7.5, 11.0, 13.2, 17.0, 22.5, 26.0, 25.5, 21.0, 15.0, 9.5, 6.5],
+      p: [33, 34, 28, 40, 44, 22, 11, 10, 25, 45, 47, 48],
+      note: "Платото на Иберия е високо и закрито от планини. Валежите са около 430 мм годишно и летните месеци са много сухи." },
+    { id: "moscow", name: "Москва", country: "Русия", type: "Влажен континентален (Dfb)", alt: "150 м",
+      t: [-6.5, -5.5, 0.0, 7.5, 14.0, 18.0, 20.0, 18.0, 12.5, 6.0, -0.5, -5.0],
+      p: [52, 40, 36, 38, 58, 81, 86, 83, 68, 66, 52, 50],
+      note: "Най-голямата годишна амплитуда в подбора: около 26 °C между януари и юли. Най-много вали през лятото." },
+    { id: "reykjavik", name: "Рейкявик", country: "Исландия", type: "Субполярен океански (Cfc)", alt: "10 м",
+      t: [0.5, 1.0, 1.5, 3.5, 7.0, 9.5, 11.5, 11.0, 8.0, 5.0, 2.0, 0.5],
+      p: [76, 72, 82, 58, 44, 50, 52, 62, 67, 86, 73, 79],
+      note: "Топлото течение държи зимата близо до нулата, но лятото остава хладно. Разликата между месеците е само около 11 °C." },
+    { id: "murmansk", name: "Мурманск", country: "Русия", type: "Субарктичен (Dfc)", alt: "50 м",
+      t: [-9.5, -9.0, -5.0, 0.0, 6.0, 11.0, 14.0, 12.0, 7.5, 1.5, -4.0, -8.0],
+      p: [30, 22, 23, 27, 36, 56, 71, 70, 57, 50, 41, 34],
+      note: "На 69° с.ш., над полярния кръг. През зимата има полярна нощ, а температурата през лятото рядко надвишава 15 °C." }
+  ];
+
+  var TMIN = -15, TMAX = 30, PMAX = 150;
+  var W = 640, H = 320, L = 44, R = 44, T = 16, B = 34;
+  var iw = W - L - R, ih = H - T - B;
+  function yT(v) { return T + ih * (1 - (v - TMIN) / (TMAX - TMIN)); }
+  function yP(v) { return T + ih * (1 - v / PMAX); }
+  function f1(v) { return v.toFixed(1).replace(".", ","); }
+  function sign(v) { return v < 0 ? "−" + f1(-v) : f1(v); }
+
+  var tabs = document.getElementById("tabs");
+  var chart = document.getElementById("chart");
+  var statsEl = document.getElementById("stats");
+
+  CITIES.forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "tab"; b.id = "tab-" + c.id; b.textContent = c.name;
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", function () { show(c.id); });
+    tabs.appendChild(b);
+  });
+
+  function show(id) {
+    var c = CITIES.filter(function (x) { return x.id === id; })[0];
+    CITIES.forEach(function (x) {
+      document.getElementById("tab-" + x.id).setAttribute("aria-pressed", x.id === id ? "true" : "false");
+    });
+    document.getElementById("cg-title").textContent = c.name + ", " + c.country;
+    document.getElementById("cg-type").textContent = c.type + " · " + c.alt;
+    document.getElementById("cg-note").textContent = c.note;
+
+    var s = "";
+    // Grid and tick labels on both scales
+    [-15, 0, 15, 30].forEach(function (tv, i) {
+      var y = yT(tv), pv = i * 50;
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="var(--line)" stroke-width="' + (tv === 0 ? 1.6 : 1) + '"/>';
+      s += '<text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + (tv < 0 ? "−" + (-tv) : tv) + '°</text>';
+      s += '<text x="' + (W - R + 8) + '" y="' + (y + 4) + '">' + pv + '</text>';
+    });
+    s += '<text x="' + (W - R + 8) + '" y="' + (T - 4) + '">мм</text>';
+
+    var step = iw / 12, bw = step * 0.56, pts = [];
+    c.p.forEach(function (pv, i) {
+      var x = L + step * i + (step - bw) / 2, y = yP(pv);
+      s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (yP(0) - y).toFixed(1) + '" fill="var(--rain)" opacity="0.85"><title>' + FULL[i] + ': ' + pv + ' мм, ' + sign(c.t[i]) + ' °C</title></rect>';
+      s += '<text x="' + (L + step * i + step / 2).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle">' + MONTHS[i] + '</text>';
+      pts.push((L + step * i + step / 2).toFixed(1) + "," + yT(c.t[i]).toFixed(1));
+    });
+    s += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--temp)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    c.t.forEach(function (tv, i) {
+      s += '<circle cx="' + (L + step * i + step / 2).toFixed(1) + '" cy="' + yT(tv).toFixed(1) + '" r="3.5" fill="var(--surface)" stroke="var(--temp)" stroke-width="2"><title>' + FULL[i] + ': ' + sign(tv) + ' °C</title></circle>';
+    });
+
+    var label = c.name + ": средна температура от " + sign(Math.min.apply(null, c.t)) + " до " + sign(Math.max.apply(null, c.t)) + " градуса, валежи " + Math.round(c.p.reduce(function (a, b) { return a + b; }, 0)) + " мм годишно.";
+    chart.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + label + '">' + s + '</svg>';
+
+    var mean = c.t.reduce(function (a, b) { return a + b; }, 0) / 12;
+    var total = c.p.reduce(function (a, b) { return a + b; }, 0);
+    var ti = c.t.indexOf(Math.max.apply(null, c.t)), ci = c.t.indexOf(Math.min.apply(null, c.t));
+    var pi = c.p.indexOf(Math.max.apply(null, c.p));
+    var rows = [
+      ["Средна годишна температура", sign(mean) + " °C"],
+      ["Годишни валежи", total + " мм"],
+      ["Най-топъл месец", FULL[ti] + ", " + sign(c.t[ti]) + " °C"],
+      ["Най-студен месец", FULL[ci] + ", " + sign(c.t[ci]) + " °C"],
+      ["Годишна амплитуда", f1(c.t[ti] - c.t[ci]) + " °C"],
+      ["Най-влажен месец", FULL[pi] + ", " + c.p[pi] + " мм"]
+    ];
+    statsEl.innerHTML = rows.map(function (r) { return "<div><dt>" + r[0] + "</dt><dd>" + r[1] + "</dd></div>"; }).join("");
+  }
+
+  show("sofia");
+})();
+</script>
+</body>
+</html>
